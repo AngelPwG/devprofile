@@ -1,0 +1,43 @@
+query {
+  user(login: "AngelPwG") {
+    name
+    login
+    bio
+    followers {
+        totalCount
+    }
+    following {
+        totalCount
+    }
+    repositories(
+        first: 5
+        orderBy: {field: CREATED_AT, direction: DESC}
+    ) {
+        nodes {
+            name
+            primaryLanguage {
+                name
+            }
+        }
+    }
+    pinnedItems(
+        first: 6
+        types: [REPOSITORY]
+    ){
+        nodes {
+            ... on Repository {
+                name
+                primaryLanguage {
+                    name
+                }
+            }
+        }
+    }
+    contributionsCollection (
+        from: "2026-02-27T00:00:00Z"
+        to: "2026-03-27T00:00:00Z"
+    ) {
+        totalCommitContributions
+    }
+  }
+}
