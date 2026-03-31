@@ -1,4 +1,4 @@
-module github.com/aws-go-apis
+module github.com/AngelPwG/devprofile
 
 go 1.26.1
 
