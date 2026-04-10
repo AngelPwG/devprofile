@@ -1,8 +1,9 @@
 package services
 
 import (
-	"devprofile/domain"
 	"strings"
+
+	models "github.com/AngelPwG/devprofile/internal/domain"
 )
 
 var languageToPokemon = map[string]string{
@@ -29,7 +30,7 @@ var languageToPokemon = map[string]string{
 
 const defaultPokemon = "Unown"
 
-func DominantLanguage(repos []domain.Repository) string {
+func DominantLanguage(repos []models.Repository) string {
 	if len(repos) == 0 {
 		return ""
 	}
