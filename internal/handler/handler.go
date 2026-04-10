@@ -82,3 +82,72 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(profile)
 }
+
+func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	username := chi.URLParam(r, "username")
+	if username == "" {
+		jsonError(w, http.StatusBadRequest, "username is required")
+		return
+	}
+	_, err := h.db.GetProfile(username)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "profile not found")
+		return
+	}
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	profile, repos, err := builder.BuildProfile(username)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.db.UpdateProfile(*profile); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.db.DeleteRepositories(profile.ID); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.db.InsertRepositories(repos, profile.ID); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	ip := r.RemoteAddr
+	if err := h.db.InsertAuditLog("UPDATE", username, ip); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	json.NewEncoder(w).Encode(profile)
+}
+
+func (h *Handler) DeleteProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	username := chi.URLParam(r, "username")
+	if username == "" {
+		jsonError(w, http.StatusBadRequest, "username is required")
+		return
+	}
+	profile, err := h.db.GetProfile(username)
+	if err == sql.ErrNoRows {
+		jsonError(w, http.StatusNotFound, "profile not found")
+		return
+	}
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.db.DeleteRepositories(profile.ID); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	ip := r.RemoteAddr
+	if err := h.db.InsertAuditLog("DELETE", username, ip); err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"message": "profile deleted successfully"})
+}
