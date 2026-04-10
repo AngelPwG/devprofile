@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"devprofile/domain"
+	models "github.com/AngelPwG/devprofile/internal/domain"
 )
 
 type ghRepo struct {
@@ -77,7 +77,7 @@ query($login: String!) {
   }
 }`
 
-func GetRepos(username string) (*domain.Profile, []domain.Repository, error) {
+func GetRepos(username string) (*models.Profile, []models.Repository, error) {
 	body := map[string]interface{}{
 		"query": reposQuery,
 		"variables": map[string]string{
@@ -121,10 +121,10 @@ func GetRepos(username string) (*domain.Profile, []domain.Repository, error) {
 
 	u := ghResp.Data.User
 
-	repos := make([]domain.Repository, 0)
+	repos := make([]models.Repository, 0)
 	if len(u.PinnedItems.Nodes) > 0 {
 		for _, node := range u.PinnedItems.Nodes {
-			repos = append(repos, domain.Repository{
+			repos = append(repos, models.Repository{
 				Name:     node.Name,
 				Language: node.Language.Name,
 			})
@@ -135,17 +135,17 @@ func GetRepos(username string) (*domain.Profile, []domain.Repository, error) {
 			limit = 5
 		}
 		for _, node := range u.Repositories.Nodes[:limit] {
-			repos = append(repos, domain.Repository{
+			repos = append(repos, models.Repository{
 				Name:     node.Name,
 				Language: node.Language.Name,
 			})
 		}
 	}
 
-	profile := &domain.Profile{
+	profile := &models.Profile{
 		GithubUser:  u.Login,
 		Name:        u.Name,
-		AvatarUrl:   u.AvatarURL,
+		AvatarURL:   u.AvatarURL,
 		Bio:         u.Bio,
 		Followers:   u.Followers.TotalCount,
 		Following:   u.Following.TotalCount,

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/AngelPwG/devprofile/models"
+	models "github.com/AngelPwG/devprofile/internal/domain"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -15,7 +15,6 @@ type DB struct {
 
 func New(path string) (*DB, error) {
 	db, err := sql.Open("sqlite3", path)
-
 	if err != nil {
 		log.Print("Error opening database: ", err)
 		return nil, err
@@ -27,7 +26,6 @@ func New(path string) (*DB, error) {
 		create table if not exists audit_log (id integer primary key autoincrement, event text not null, resource text not null, author_ip text not null, timestamp text not null);
 	`
 	_, err = db.Exec(sqlStmt)
-
 	if err != nil {
 		log.Print("Error whle creating the tables.")
 		return nil, err

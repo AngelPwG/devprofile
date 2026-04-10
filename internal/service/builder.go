@@ -1,11 +1,12 @@
 package services
 
 import (
-	"devprofile/domain"
 	"fmt"
+
+	models "github.com/AngelPwG/devprofile/internal/domain"
 )
 
-func BuildProfile(username string) (*domain.Profile, []domain.Repository, error) {
+func BuildProfile(username string) (*models.Profile, []models.Repository, error) {
 	profile, repos, err := GetRepos(username)
 	if err != nil {
 		return nil, nil, fmt.Errorf("builder: github: %w", err)
