@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/AngelPwG/devprofile/models"
+	models "github.com/AngelPwG/devprofile/internal/domain"
 	_ "github.com/mattn/go-sqlite3"
 )
 
