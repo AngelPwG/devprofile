@@ -13,6 +13,7 @@ query {
         first: 5
         orderBy: {field: CREATED_AT, direction: DESC}
     ) {
+        totalCount
         nodes {
             name
             primaryLanguage {

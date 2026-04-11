@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	cache "github.com/AngelPwG/devprofile/internal/cache"
 	db "github.com/AngelPwG/devprofile/internal/db"
 	builder "github.com/AngelPwG/devprofile/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -90,7 +91,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "username is required")
 		return
 	}
-	_, err := h.db.GetProfile(username)
+	oldProfile, err := h.db.GetProfile(username)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "profile not found")
 		return
@@ -99,6 +100,20 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	canRefresh, remaining, err := cache.CanRefresh(oldProfile.UpdatedAt)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !canRefresh {
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]any{
+			"error":               "too_soon",
+			"retry_after_seconds": remaining,
+		})
+		return
+	}
+
 	profile, repos, err := builder.BuildProfile(username)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
@@ -131,7 +146,7 @@ func (h *Handler) DeleteProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "username is required")
 		return
 	}
-	profile, err := h.db.GetProfile(username)
+	_, err := h.db.GetProfile(username)
 	if err == sql.ErrNoRows {
 		jsonError(w, http.StatusNotFound, "profile not found")
 		return
@@ -140,7 +155,7 @@ func (h *Handler) DeleteProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := h.db.DeleteRepositories(profile.ID); err != nil {
+	if err := h.db.DeleteProfile(username); err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

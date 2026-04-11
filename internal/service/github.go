@@ -29,7 +29,8 @@ type ghUser struct {
 		TotalCount int `json:"totalCount"`
 	} `json:"following"`
 	Repositories struct {
-		Nodes []ghRepo `json:"nodes"`
+		TotalCount int      `json:"totalCount"`
+		Nodes      []ghRepo `json:"nodes"`
 	} `json:"repositories"`
 	PinnedItems struct {
 		Nodes []ghRepo `json:"nodes"`
@@ -96,6 +97,7 @@ func GetRepos(username string) (*models.Profile, []models.Repository, error) {
 	}
 
 	token := os.Getenv("GITHUB_TOKEN")
+	fmt.Println(token)
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -149,7 +151,7 @@ func GetRepos(username string) (*models.Profile, []models.Repository, error) {
 		Bio:         u.Bio,
 		Followers:   u.Followers.TotalCount,
 		Following:   u.Following.TotalCount,
-		PublicRepos: len(u.Repositories.Nodes),
+		PublicRepos: u.Repositories.TotalCount,
 	}
 
 	return profile, repos, nil
