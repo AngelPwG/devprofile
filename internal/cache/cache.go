@@ -1,64 +1,17 @@
 package cache
 
-import (
-	"sync"
-	"time"
-
-	models "github.com/AngelPwG/devprofile/internal/domain"
-)
+import "time"
 
 const TTL = time.Hour
 
-type Cache struct {
-	mu    sync.RWMutex
-	store map[string]*models.Profile
-}
-
-var Instance = &Cache{
-	store: make(map[string]*models.Profile),
-}
-
-func (c *Cache) Get(githubUser string) (*models.Profile, bool) {
-	c.mu.Lock()
-	defer c.mu.RUnlock()
-
-	profile, exists := c.store[githubUser]
-	if !exists {
-		return nil, false
-	}
-
-	profileLastUpdated, _ := time.Parse(time.RFC3339, profile.UpdatedAt)
-
-	if time.Since(profileLastUpdated) > TTL {
-		return profile, false
-	}
-
-	return profile, true
-}
-
-func (c *Cache) Set(profile *models.Profile) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.store[profile.GithubUser] = profile
-}
-
-func (c *Cache) MinutesUntilRefresh(githubUser string) int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	profile, exists := c.store[githubUser]
-	if !exists {
-		return 0
-	}
-
-	updatedAt, err := time.Parse(time.RFC3339, profile.UpdatedAt)
+func CanRefresh(UpdatedAt string) (bool, int, error) {
+	t, err := time.Parse(time.RFC3339, UpdatedAt)
 	if err != nil {
-		return 0
+		return false, 0, err
 	}
-	remaining := TTL - time.Since(updatedAt)
+	remaining := TTL - time.Since(t)
 	if remaining <= 0 {
-		return 0
+		return true, 0, nil
 	}
-
-	return int(remaining.Minutes()) + 1
+	return false, int(remaining.Seconds()), nil
 }

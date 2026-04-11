@@ -13,7 +13,7 @@ type DB struct {
 	conn *sql.DB
 }
 
-func New(path string) (*DB, error) {
+func NewDB(path string) (*DB, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		log.Print("Error opening database: ", err)
@@ -34,7 +34,7 @@ func New(path string) (*DB, error) {
 }
 
 func (d *DB) InsertProfile(p models.Profile) error {
-	_, err := d.conn.Exec("insert into profiles (github_user, name, avatar_url, bio, followers, following, public_repos, language, pokemon, pokemon_img, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", p.GithubUser, p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, p.CreatedAt, p.UpdatedAt)
+	_, err := d.conn.Exec("insert into profiles (github_user, name, avatar_url, bio, followers, following, public_repos, language, pokemon, pokemon_img, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", p.GithubUser, p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	return err
 }
 
@@ -45,7 +45,7 @@ func (d *DB) GetProfiles() ([]models.Profile, error) {
 	}
 	defer rows.Close()
 
-	var profiles []models.Profile
+	profiles := []models.Profile{}
 	for rows.Next() {
 		var p models.Profile
 		if err := rows.Scan(&p.ID, &p.GithubUser, &p.Name, &p.AvatarURL, &p.Bio, &p.Followers, &p.Following, &p.PublicRepos, &p.Language, &p.Pokemon, &p.PokemonImg, &p.CreatedAt, &p.UpdatedAt); err != nil {
@@ -63,7 +63,7 @@ func (d *DB) GetProfile(user string) (models.Profile, error) {
 }
 
 func (d *DB) UpdateProfile(p models.Profile) error {
-	_, err := d.conn.Exec("update profiles set name = ?, avatar_url = ?, bio = ?, followers = ?, following = ?, public_repos = ?, language = ?, pokemon = ?, pokemon_img = ?, updated_at = ? where github_user = ?", p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, p.UpdatedAt, p.GithubUser)
+	_, err := d.conn.Exec("update profiles set name = ?, avatar_url = ?, bio = ?, followers = ?, following = ?, public_repos = ?, language = ?, pokemon = ?, pokemon_img = ?, updated_at = ? where github_user = ?", p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, time.Now().Format(time.RFC3339), p.GithubUser)
 	return err
 }
 
@@ -83,7 +83,7 @@ func (d *DB) InsertRepositories(repos []models.Repository, id int) error {
 }
 
 func (d *DB) GetRepositories(id int) ([]models.Repository, error) {
-	var repos []models.Repository
+	repos := []models.Repository{}
 	rows, err := d.conn.Query("select * from repositories where profile_id = ?", id)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (d *DB) InsertAuditLog(event, resource, ip string) error {
 }
 
 func (d *DB) GetAuditLogs() ([]models.AuditLog, error) {
-	var logs []models.AuditLog
+	logs := []models.AuditLog{}
 	rows, err := d.conn.Query("select * from audit_log")
 	if err != nil {
 		return nil, err
