@@ -33,9 +33,13 @@ func NewDB(path string) (*DB, error) {
 	return &DB{conn: db}, nil
 }
 
-func (d *DB) InsertProfile(p models.Profile) error {
-	_, err := d.conn.Exec("insert into profiles (github_user, name, avatar_url, bio, followers, following, public_repos, language, pokemon, pokemon_img, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", p.GithubUser, p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
-	return err
+func (d *DB) InsertProfile(p models.Profile) (int, error) {
+	result, err := d.conn.Exec("insert into profiles (github_user, name, avatar_url, bio, followers, following, public_repos, language, pokemon, pokemon_img, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", p.GithubUser, p.Name, p.AvatarURL, p.Bio, p.Followers, p.Following, p.PublicRepos, p.Language, p.Pokemon, p.PokemonImg, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err != nil {
+		return 0, err
+	}
+	id, err := result.LastInsertId()
+	return int(id), err
 }
 
 func (d *DB) GetProfiles() ([]models.Profile, error) {

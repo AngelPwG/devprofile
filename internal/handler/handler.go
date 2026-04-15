@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	cache "github.com/AngelPwG/devprofile/internal/cache"
 	db "github.com/AngelPwG/devprofile/internal/db"
@@ -26,23 +27,31 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 
 func (h *Handler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	var body struct {
+		Username string `json:"username"`
+	}
 
-	var username string
-	if err := json.NewDecoder(r.Body).Decode(&username); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	username := body.Username
 
 	profile, repos, err := builder.BuildProfile(username)
+	if err != nil {
+		if strings.Contains(err.Error(), "user not found") {
+			jsonError(w, http.StatusNotFound, "github user not found")
+			return
+		}
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	id, err := h.db.InsertProfile(*profile)
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := h.db.InsertProfile(*profile); err != nil {
-		jsonError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if err := h.db.InsertRepositories(repos, profile.ID); err != nil {
+	if err := h.db.InsertRepositories(repos, id); err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -81,7 +90,15 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	json.NewEncoder(w).Encode(profile)
+	repos, err := h.db.GetRepositories(profile.ID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"profile": profile,
+		"repos": repos,
+	})
 }
 
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +133,10 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	profile, repos, err := builder.BuildProfile(username)
 	if err != nil {
+		if strings.Contains(err.Error(), "user not found") {
+			jsonError(w, http.StatusNotFound, "github user not found")
+			return
+		}
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

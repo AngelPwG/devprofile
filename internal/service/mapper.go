@@ -21,7 +21,7 @@ var languageToPokemon = map[string]string{
 	"c++":        "Mewtwo",
 	"go":         "Greedent",
 	"ruby":       "Sableye",
-	"html":       "Jinx",
+	"html":       "Jynx",
 	"php":        "Phanpy",
 	"java":       "Metapod",
 	"c#":         "Kakuna",

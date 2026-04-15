@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	models "github.com/AngelPwG/devprofile/internal/domain"
 )
@@ -59,6 +60,7 @@ query($login: String!) {
     followers { totalCount }
     following  { totalCount }
     repositories(first: 5, orderBy: {field: CREATED_AT, direction: DESC}) {
+      totalCount
       nodes {
         name
         primaryLanguage { name }
@@ -97,7 +99,6 @@ func GetRepos(username string) (*models.Profile, []models.Repository, error) {
 	}
 
 	token := os.Getenv("GITHUB_TOKEN")
-	fmt.Println(token)
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -118,7 +119,11 @@ func GetRepos(username string) (*models.Profile, []models.Repository, error) {
 	}
 
 	if len(ghResp.Errors) > 0 {
-		return nil, nil, fmt.Errorf("github: api error: %s", ghResp.Errors[0].Message)
+		msg := ghResp.Errors[0].Message
+		if strings.Contains(msg, "Could not resolve to a User") {
+			return nil, nil, fmt.Errorf("user not found")
+		}		
+		return nil, nil, fmt.Errorf("github: api error: %s", msg)
 	}
 
 	u := ghResp.Data.User
